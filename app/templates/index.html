@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Study Buddy - Advanced Learning Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "dark-bg": "#060814",
+              "glass-bg": "rgba(255, 255, 255, 0.09)",
+              "accent-primary": "#6366f1",
+              "text-light": "#9b9ba8",
+              "text-muted": "#a1a1aa",
+            },
+            backdropBlur: {
+              xs: "2px",
+              sm: "6px",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-dark-bg text-text-light min-h-screen flex flex-col font-sans">
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center justify-center p-6">
+      <!-- Glassmorphic Container -->
+      <div
+        class="w-full max-w-4xl bg-glass-bg backdrop-blur-sm rounded-lg shadow-lg p-8"
+      >
+        <!-- Header -->
+        <div class="text-center mb-8">
+          <h1 class="text-4xl font-extrabold text-text-light mb-2">
+            Study Buddy
+          </h1>
+          <p class="text-text-muted text-lg">
+            Your advanced learning research assistant.
+          </p>
+        </div>
+
+        <!-- Search Form -->
+        <form id="search-form" class="flex items-center space-x-3">
+          <div class="relative flex-grow">
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Enter your study topic..."
+              class="w-full p-4 rounded-md bg-dark-bg text-text-light placeholder-text-muted border border-gray-700 focus:outline-none focus:ring-2 focus:ring-accent-primary"
+            />
+          </div>
+          <button
+            type="submit"
+            class="bg-accent-primary text-white px-6 py-3 rounded-md hover:bg-opacity-80 transition duration-300"
+          >
+            Search
+          </button>
+        </form>
+
+        <!-- Search Results -->
+        <section id="search-results" class="mt-10 space-y-6 text-text-light">
+          <!-- Dynamic results will appear here -->
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-4 text-center text-text-muted text-sm">
+      <p>© 2024 Study Buddy. All rights reserved.</p>
+    </footer>
+
+    <script>
+      document
+        .getElementById("search-form")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const query = document.getElementById("search-input").value;
+          const resultsContainer = document.getElementById("search-results");
+
+          resultsContainer.innerHTML =
+            '<div class="flex justify-center items-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-custom-primary"></div></div>';
+
+          fetch("/search", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ query: query }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log("Received data:", data); // Debug log
+              const results = data.results; // Access the nested results object
+              resultsContainer.innerHTML = "";
+
+              // Overview Section
+              if (results.overview) {
+                const overviewHTML = `
+                            <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg mb-8">
+                                <h2 class="text-2xl font-semibold mb-3">Overview</h2>
+                                <p class="text-gray-700 leading-relaxed">${results.overview}</p>
+                            </div>
+                        `;
+                resultsContainer.innerHTML += overviewHTML;
+              }
+
+              // YouTube Videos Section (updated)
+              if (results.youtube_videos && results.youtube_videos.length > 0) {
+                let youtubeHTML = `
+                            <div class="mb-8">
+                                <h2 class="text-2xl font-semibold mb-4">Related Videos</h2>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        `;
+
+                results.youtube_videos.forEach((video) => {
+                  youtubeHTML += `
+                                <div class="bg-white rounded-lg overflow-hidden shadow-md">
+                                    <div class="aspect-w-16 aspect-h-9">
+                                        <a href="https://www.youtube.com/watch?v=${video.video_id}" 
+                                           target="_blank"
+                                           class="block relative">
+                                            <img 
+                                                src="${video.thumbnail}"
+                                                alt="${video.title}"
+                                                class="w-full h-48 object-cover"
+                                            />
+                                            <div class="absolute inset-0 bg-black bg-opacity-10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                                <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M8 5v14l11-7z"/>
+                                                </svg>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="font-bold text-lg mb-2 line-clamp-2">
+                                            <a href="https://www.youtube.com/watch?v=${video.video_id}" 
+                                               target="_blank"
+                                               class="hover:text-custom-primary">
+                                                ${video.title}
+                                            </a>
+                                        </h3>
+                                        <p class="text-sm text-gray-600 line-clamp-2">${video.description}</p>
+                                        <a href="https://www.youtube.com/watch?v=${video.video_id}" 
+                                           target="_blank"
+                                           class="inline-block mt-2 text-custom-primary hover:underline">
+                                            Watch on YouTube →
+                                        </a>
+                                    </div>
+                                </div>
+                            `;
+                });
+
+                youtubeHTML += `</div></div>`;
+                resultsContainer.innerHTML += youtubeHTML;
+              }
+
+              // Web Articles Section
+              if (results.web_articles && results.web_articles.length > 0) {
+                let articlesHTML = `
+                            <div class="mb-8">
+                                <h2 class="text-2xl font-semibold mb-4">Web Resources</h2>
+                                <div class="grid grid-cols-1 gap-4">
+                        `;
+
+                results.web_articles.forEach((article) => {
+                  articlesHTML += `
+                                <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                                    <h3 class="font-bold text-lg mb-2">
+                                        <a href="${article.url}" target="_blank" class="text-custom-primary hover:underline">
+                                            ${article.title}
+                                        </a>
+                                    </h3>
+                                    <p class="text-gray-600 mb-2">${article.description}</p>
+                                    <div class="text-sm text-gray-500">
+                                        <a href="${article.url}" target="_blank" class="text-custom-primary hover:underline">
+                                            Read more →
+                                        </a>
+                                    </div>
+                                </div>
+                            `;
+                });
+
+                articlesHTML += `</div></div>`;
+                resultsContainer.innerHTML += articlesHTML;
+              }
+
+              // Study Materials Section
+              if (
+                results.study_materials &&
+                results.study_materials.length > 0
+              ) {
+                let materialsHTML = `
+                            <div class="mb-8">
+                                <h2 class="text-2xl font-semibold mb-4">Educational Resources</h2>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        `;
+
+                results.study_materials.forEach((material) => {
+                  const typeIcons = {
+                    "PDF Document": "📄",
+                    Presentation: "📊",
+                    "Web Resource": "🔗",
+                  };
+
+                  materialsHTML += `
+                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                                    <div class="flex items-start space-x-3">
+                                        <span class="text-2xl">${
+                                          typeIcons[material.type] || "📚"
+                                        }</span>
+                                        <div>
+                                            <h3 class="font-bold mb-1">
+                                                <a href="${
+                                                  material.url
+                                                }" target="_blank" class="text-custom-primary hover:underline">
+                                                    ${material.title}
+                                                </a>
+                                            </h3>
+                                            <div class="text-sm text-gray-500">${
+                                              material.type
+                                            }</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                });
+
+                materialsHTML += `</div></div>`;
+                resultsContainer.innerHTML += materialsHTML;
+              }
+
+              // No Results Message
+              if (
+                !results.overview &&
+                (!results.web_articles || results.web_articles.length === 0) &&
+                (!results.study_materials ||
+                  results.study_materials.length === 0)
+              ) {
+                resultsContainer.innerHTML = `
+                            <div class="text-center py-8">
+                                <p class="text-gray-500 text-lg">No results found. Try refining your search terms.</p>
+                            </div>
+                        `;
+              }
+            })
+            .catch((error) => {
+              resultsContainer.innerHTML = `
+                        <div class="text-center py-8">
+                            <p class="text-red-500 text-lg">An error occurred while searching. Please try again.</p>
+                        </div>
+                    `;
+              console.error("Search error:", error);
+            });
+        });
+    </script>
+  </body>
+</html>

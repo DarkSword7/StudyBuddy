@@ -1,0 +1,7 @@
+/* 
+    Custom CSS for Study Search App 
+    Note: Most styling is now done with Tailwind in the HTML
+*/
+body {
+  font-family: "Inter", sans-serif;
+}

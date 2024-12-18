@@ -1,0 +1,6 @@
+flask==2.3.2
+requests==2.31.0
+beautifulsoup4==4.12.2
+google-api-python-client==2.86.0
+python-dotenv==1.0.0
+lxml==4.9.3  # Helps with parsing HTML
